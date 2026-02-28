@@ -333,6 +333,13 @@ class FunkoOrderManager:
     def __init__(self):
         self.pasos_orden = [
             {
+                'id': 'datos_cliente',
+                'nombre': 'DATOS DEL CLIENTE',
+                'descripcion': 'nombre y telefono del cliente',
+                'prompt': "📱 **DATOS DE CONTACTO:**\n\nPara finalizar tu pedido, necesito tus datos:\n\n• **Nombre completo:**\n• **Número de WhatsApp:** (con código de país)\n\nEjemplo: Juan Pérez, +51 987654321\n\n¿Cuál es tu nombre y número de teléfono?",
+                'key_field': 'datos_cliente'
+            },
+            {
                 'id': 'cabeza',
                 'nombre': 'CABEZA',
                 'descripcion': 'detalles de la cabeza',
@@ -390,6 +397,7 @@ class FunkoOrderManager:
     def default_order(self):
         """Return a fresh copy of default order structure"""
         return {
+            'datos_cliente': '',
             'cabeza': '',
             'parte_superior': '',
             'parte_inferior': '',
@@ -458,7 +466,10 @@ class FunkoOrderManager:
         # Actually better to just call property.
         extracted = self.default_order
 
-        if step_id == 'cabeza':
+        if step_id == 'datos_cliente':
+            extracted['datos_cliente'] = message_clean
+        
+        elif step_id == 'cabeza':
             extracted['cabeza'] = message_clean
 
         elif step_id == 'parte_superior':

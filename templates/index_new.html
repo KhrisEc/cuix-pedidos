@@ -589,6 +589,31 @@
                 </div>
             </section>
 
+            <!-- Customer Data Form (shown for datos_cliente step) -->
+            <div id="customerDataForm" style="display:none; padding: 20px; background: white; margin: 10px; border-radius: 12px;">
+                <h3 style="margin-bottom:15px;">📱 Datos de Contacto</h3>
+                <div class="form-group">
+                    <label>Nombre completo:</label>
+                    <input type="text" id="customerNameInput" placeholder="Ej: Juan Pérez" style="width:100%;padding:12px;border:2px solid #eee;border-radius:8px;">
+                </div>
+                <div class="form-group" style="margin-top:10px;">
+                    <label>WhatsApp:</label>
+                    <div style="display:flex;gap:8px;">
+                        <select id="countryCodeSelect" style="padding:12px;border:2px solid #eee;border-radius:8px;">
+                            <option value="51">🇵🇪 +51</option>
+                            <option value="54">🇦🇷 +54</option>
+                            <option value="57">🇨🇴 +57</option>
+                            <option value="56">🇨🇱 +56</option>
+                            <option value="1">🇺🇸 +1</option>
+                        </select>
+                        <input type="text" id="customerPhoneInput" placeholder="987654321" style="flex:1;padding:12px;border:2px solid #eee;border-radius:8px;">
+                    </div>
+                </div>
+                <button onclick="submitCustomerData()" style="margin-top:15px;width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:600;">
+                    Continuar →
+                </button>
+            </div>
+
             <!-- Input Area -->
             <footer class="chat-input">
                 <div class="input-container">
@@ -615,6 +640,10 @@
                 <h2>Resumen del Pedido</h2>
             </div>
             <div class="summary-content">
+                <div class="summary-item" id="summaryDatosCliente" onclick="editSection('datos_cliente')">
+                    <label>📱 DATOS CONTACTO</label>
+                    <div class="value">No especificado</div>
+                </div>
                 <div class="summary-item" id="summaryCabeza" onclick="editSection('cabeza')">
                     <label>🧠 CABEZA</label>
                     <div class="value">No especificado</div>
@@ -842,6 +871,7 @@
             if (data.current_step) {
                 currentStepId = data.current_step;
                 highlightActiveStep(currentStepId);
+                updateInputVisibility(currentStepId);
             }
 
             // Update order summary
@@ -863,6 +893,7 @@
                 if (data.current_step) {
                     currentStepId = data.current_step;
                     highlightActiveStep(currentStepId);
+                    updateInputVisibility(currentStepId);
                 }
 
                 // Handle confirmation states
@@ -1043,6 +1074,7 @@
         // Update order summary
         function updateOrderSummary(data) {
             const updates = {
+                summaryDatosCliente: { value: data.datos_cliente || 'No especificado' },
                 summaryCabeza: { value: data.cabeza || 'No especificado' },
                 summaryParteSuperior: { value: data.parte_superior || 'No especificado' },
                 summaryParteInferior: { value: data.parte_inferior || 'No especificado' },
@@ -1076,6 +1108,7 @@
             if (!stepId) return;
 
             const map = {
+                'datos_cliente': 'summaryDatosCliente',
                 'cabeza': 'summaryCabeza',
                 'parte_superior': 'summaryParteSuperior',
                 'parte_inferior': 'summaryParteInferior',
@@ -1092,6 +1125,40 @@
                     element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
+        }
+
+        // Show/hide customer data form based on current step
+        function updateInputVisibility(stepId) {
+            var customerForm = document.getElementById('customerDataForm');
+            var chatInput = document.querySelector('.chat-input');
+            if (stepId === 'datos_cliente') {
+                customerForm.style.display = 'block';
+                chatInput.style.display = 'none';
+            } else {
+                customerForm.style.display = 'none';
+                chatInput.style.display = 'block';
+            }
+        }
+
+        // Submit customer data
+        function submitCustomerData() {
+            var name = document.getElementById('customerNameInput').value.trim();
+            var phone = document.getElementById('customerPhoneInput').value.trim();
+            var countryCode = document.getElementById('countryCodeSelect').value;
+            
+            if (!name || !phone) {
+                alert('Por favor ingresa tu nombre y número de teléfono');
+                return;
+            }
+            
+            var fullPhone = '+' + countryCode + ' ' + phone;
+            var message = 'Mi nombre es ' + name + ', mi teléfono es ' + fullPhone;
+            
+            // Send message to backend
+            socket.emit('user_message', {
+                content: message,
+                user_id: userId
+            });
         }
 
         // Update progress
