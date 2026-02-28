@@ -1156,6 +1156,10 @@
             var fullPhone = '+' + countryPrefix + ' ' + phone;
             var message = 'Mi nombre es ' + name + ', mi teléfono es ' + fullPhone;
             
+            // Hide form, show chat input
+            document.getElementById('customerDataForm').style.display = 'none';
+            document.querySelector('.chat-input').style.display = 'flex';
+            
             // Send message to backend
             socket.emit('user_message', {
                 content: message,
