@@ -144,11 +144,13 @@
             .then(function(data){
                 console.log("Orders loaded:", data);
                 orders = data.orders || [];
+                // Sort by created_at descending (newest first)
+                orders.sort(function(a,b){ return new Date(b.created_at) - new Date(a.created_at); });
                 document.getElementById("countPending").textContent = orders.filter(function(o){return o.status==="pending"}).length;
                 document.getElementById("countSent").textContent = orders.filter(function(o){return o.status==="sent"}).length;
                 document.getElementById("countScheduled").textContent = orders.filter(function(o){return o.status==="scheduled"}).length;
                 document.getElementById("countDelivered").textContent = orders.filter(function(o){return o.status==="delivered"}).length;
-                var filtered = orders.filter(function(o){return o.status===currentStatus}).slice(0,10);
+                var filtered = orders.filter(function(o){return o.status===currentStatus}).slice(0,50);
                 var tbody = document.getElementById("ordersTableBody");
                 if(filtered.length===0){tbody.innerHTML="<tr><td colspan=6 class=empty-state>No hay pedidos</td></tr>";return;}
                 tbody.innerHTML = filtered.map(function(order){
