@@ -72,6 +72,7 @@
         <ul class="sidebar-menu">
             <li><a href="#" class="active" onclick="showSection('orders')"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
             <li><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Usuarios</a></li>
+            <li><a href="#" onclick="showSection('settings')"><i class="fas fa-cog"></i> Configuración</a></li>
         </ul>
         <div class="sidebar-footer">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -101,6 +102,19 @@
                 <tbody id="usersTableBody"><tr><td colspan="6" class="empty-state">Cargando...</td></tr></tbody></table>
             </div>
         </div>
+        <div id="settingsSection" style="display:none;">
+            <div class="page-header"><h2>Configuración</h2></div>
+            <div class="orders-list" style="padding:20px;">
+                <div class="form-group">
+                    <label>WhatsApp Admin (para cotizaciones):</label>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <input type="text" id="waAdminPhone" placeholder="51993232534" style="max-width:200px;">
+                        <button class="btn btn-primary" onclick="saveSettings()">Guardar</button>
+                    </div>
+                    <small style="color:#666;">Número sin el +, ej: 51993232534</small>
+                </div>
+            </div>
+        </div>
     </main>
     <div class="modal" id="orderModal">
         <div class="modal-content">
@@ -126,8 +140,10 @@
             event.target.closest("a").classList.add("active");
             document.getElementById("ordersSection").style.display = section === "orders" ? "block" : "none";
             document.getElementById("usersSection").style.display = section === "users" ? "block" : "none";
+            document.getElementById("settingsSection").style.display = section === "settings" ? "block" : "none";
             if (section === "orders") loadOrders();
             if (section === "users") loadUsers();
+            if (section === "settings") loadSettings();
         }
         
         function filterStatus(status) {
@@ -229,8 +245,8 @@
             // Actualizar pedido
             updateOrder(orderId,{customer_name:name,customer_phone:fullPhone,order_type:type,price:price,status:"sent"});
             
-            // Número del admin (para revisar cotizaciones)
-            var adminPhone = "51993232534";
+            // Número del admin (leer de configuración)
+            var adminPhone = localStorage.getItem("wa_admin_phone") || "51993232534";
             
             // Obtener detalles del pedido
             var desc = order.description || "";
@@ -301,6 +317,18 @@
                     return "<tr><td>"+u.id+"</td><td>"+u.username+"</td><td>"+u.full_name+"</td><td>"+u.email+"</td><td>"+u.role+"</td><td>"+deleteBtn+"</td></tr>";
                 }).join("");
             }).catch(function(){tbody.innerHTML="<tr><td colspan=6>Error</td></tr>";});
+        }
+        
+        function loadSettings(){
+            var waPhone = localStorage.getItem("wa_admin_phone") || "51993232534";
+            document.getElementById("waAdminPhone").value = waPhone;
+        }
+        
+        function saveSettings(){
+            var waPhone = document.getElementById("waAdminPhone").value.trim();
+            if(!waPhone){alert("Ingresa el número de WhatsApp");return;}
+            localStorage.setItem("wa_admin_phone", waPhone);
+            alert("Configuración guardada");
         }
         
         function showCreateUserModal(){
