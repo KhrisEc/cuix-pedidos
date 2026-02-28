@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Cuix Studio</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #FF6B6B; --secondary: #4ECDC4; --dark: #2C3E50; --light: #ECF0F1; --success: #2ECC71; --warning: #F39C12; --sidebar-width: 250px; }
+        body { font-family: "Poppins", sans-serif; background: #f5f6fa; min-height: 100vh; display: flex; }
+        .sidebar { width: var(--sidebar-width); background: var(--dark); color: white; min-height: 100vh; position: fixed; left: 0; top: 0; padding: 20px 0; }
+        .sidebar-logo { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        .sidebar-logo h1 { font-family: cursive; font-size: 32px; color: var(--primary); }
+        .sidebar-menu { list-style: none; }
+        .sidebar-menu li { margin: 5px 10px; }
+        .sidebar-menu a { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: rgba(255,255,255,0.7); text-decoration: none; border-radius: 8px; transition: all 0.3s; }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background: var(--primary); color: white; }
+        .sidebar-footer { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .main-content { margin-left: var(--sidebar-width); flex: 1; padding: 20px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-header h2 { color: var(--dark); font-size: 24px; }
+        .status-tabs { display: flex; gap: 15px; margin-bottom: 25px; }
+        .status-tab { flex: 1; background: white; padding: 20px; border-radius: 12px; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .status-tab:hover { transform: translateY(-3px); }
+        .status-tab.active { border-color: var(--primary); box-shadow: 0 5px 20px rgba(255,107,107,0.2); }
+        .status-tab .icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px; }
+        .status-tab.pending .icon { background: #FFF3CD; color: var(--warning); }
+        .status-tab.sent .icon { background: #E8F4FD; color: #3498DB; }
+        .status-tab.scheduled .icon { background: #E8F8F5; color: var(--secondary); }
+        .status-tab.delivered .icon { background: #D4EDDA; color: var(--success); }
+        .status-tab .count { font-size: 28px; font-weight: bold; color: var(--dark); }
+        .status-tab .label { color: #666; font-size: 13px; }
+        .orders-list { background: white; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); overflow: hidden; }
+        .orders-list table { width: 100%; border-collapse: collapse; }
+        .orders-list th { background: var(--dark); color: white; padding: 15px; text-align: left; font-weight: 500; }
+        .orders-list td { padding: 15px; border-bottom: 1px solid #eee; }
+        .orders-list tr:hover { background: #fafafa; }
+        .orders-list tr { cursor: pointer; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { color: var(--dark); }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+        .modal-body { padding: 25px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--dark); }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: var(--primary); }
+        .form-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-secondary { background: #95A5A6; color: white; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .detail-item { background: #f9f9f9; padding: 12px; border-radius: 8px; }
+        .detail-item .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+        .detail-item .value { font-weight: 500; color: var(--dark); }
+        .whatsapp-btn { background: #25D366; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; margin-top: 15px; }
+        .empty-state { text-align: center; padding: 60px; color: #999; }
+        
+        
+        
+        .phone-wrap{display:flex;gap:8px;align-items:center}.phone-wrap img{width:24px;height:16px;border-radius:2px}.phone-wrap select{width:70px!important;padding:8px!important}#usersSection { display: none; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-logo"><h1>CUIX</h1><p>Admin</p></div>
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" onclick="showSection('orders')"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+            <li><a href="#" onclick="showSection('users')"><i class="fas fa-users"></i> Usuarios</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:40px;height:40px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;" id="userInitial">A</div>
+                <div><div id="userNameDisplay">Admin</div><small style="color:#999;cursor:pointer;" onclick="logout()">Salir</small></div>
+            </div>
+        </div>
+    </nav>
+    <main class="main-content">
+        <div id="ordersSection">
+            <div class="page-header"><h2>Pedidos</h2></div>
+            <div class="status-tabs">
+                <div class="status-tab pending active" onclick="filterStatus('pending')"><div class="icon">📝</div><div class="count" id="countPending">0</div><div class="label">Pendiente</div></div>
+                <div class="status-tab sent" onclick="filterStatus('sent')"><div class="icon">📤</div><div class="count" id="countSent">0</div><div class="label">Enviada</div></div>
+                <div class="status-tab scheduled" onclick="filterStatus('scheduled')"><div class="icon">📅</div><div class="count" id="countScheduled">0</div><div class="label">Agendado</div></div>
+                <div class="status-tab delivered" onclick="filterStatus('delivered')"><div class="icon">✅</div><div class="count" id="countDelivered">0</div><div class="label">Entregado</div></div>
+            </div>
+            <div class="orders-list">
+                <table><thead><tr><th>ID</th><th>Cliente</th><th>Tipo</th><th>Fecha</th><th>Precio</th><th>Acción</th></tr></thead>
+                <tbody id="ordersTableBody"><tr><td colspan="6" class="empty-state">Cargando...</td></tr></tbody></table>
+            </div>
+        </div>
+        <div id="usersSection" style="display:none;">
+            <div class="page-header"><h2>Usuarios</h2><button class="btn btn-primary" onclick="showCreateUserModal()" style="padding:8px 16px;margin-left:auto;"><i class="fas fa-plus"></i> Nuevo Usuario</button></div>
+            <div class="orders-list">
+                <table><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr></thead>
+                <tbody id="usersTableBody"><tr><td colspan="6" class="empty-state">Cargando...</td></tr></tbody></table>
+            </div>
+        </div>
+    </main>
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Pedido #<span id="orderModalId"></span></h3><button class="modal-close" onclick="closeModal()">×</button></div>
+            <div class="modal-body" id="orderModalBody"></div>
+        </div>
+    </div>
+    <script>
+        var currentStatus = "pending";
+        var orders = [];
+        
+        function checkAuth() {
+            var token = localStorage.getItem("cuix_admin_token");
+            if (!token) { window.location.href = "/login.html"; return; }
+            var user = JSON.parse(localStorage.getItem("cuix_admin_user") || "{}");
+            if (user.name) { document.getElementById("userNameDisplay").textContent = user.name; document.getElementById("userInitial").textContent = user.name.charAt(0).toUpperCase(); }
+        }
+        
+        function logout() { localStorage.removeItem("cuix_admin_token"); localStorage.removeItem("cuix_admin_user"); window.location.href = "/login.html"; }
+        
+        function showSection(section) {
+            document.querySelectorAll(".sidebar-menu a").forEach(function(a){ a.classList.remove("active"); });
+            event.target.closest("a").classList.add("active");
+            document.getElementById("ordersSection").style.display = section === "orders" ? "block" : "none";
+            document.getElementById("usersSection").style.display = section === "users" ? "block" : "none";
+            if (section === "orders") loadOrders();
+            if (section === "users") loadUsers();
+        }
+        
+        function filterStatus(status) {
+            currentStatus = status;
+            document.querySelectorAll(".status-tab").forEach(function(t){ t.classList.remove("active"); });
+            document.querySelector(".status-tab." + status).classList.add("active");
+            loadOrders();
+        }
+        
+        function loadOrders() {
+            var token = localStorage.getItem("cuix_admin_token");
+            fetch("/api/admin/orders", { headers: { "Authorization": "Bearer " + token } })
+            .then(function(response){ if(response.status===401){logout();} return response.json(); })
+            .then(function(data){
+                console.log("Orders loaded:", data);
+                orders = data.orders || [];
+                document.getElementById("countPending").textContent = orders.filter(function(o){return o.status==="pending"}).length;
+                document.getElementById("countSent").textContent = orders.filter(function(o){return o.status==="sent"}).length;
+                document.getElementById("countScheduled").textContent = orders.filter(function(o){return o.status==="scheduled"}).length;
+                document.getElementById("countDelivered").textContent = orders.filter(function(o){return o.status==="delivered"}).length;
+                var filtered = orders.filter(function(o){return o.status===currentStatus}).slice(0,10);
+                var tbody = document.getElementById("ordersTableBody");
+                if(filtered.length===0){tbody.innerHTML="<tr><td colspan=6 class=empty-state>No hay pedidos</td></tr>";return;}
+                tbody.innerHTML = filtered.map(function(order){
+                    return "<tr onclick='viewOrder("+order.id+")'><td>#"+order.id+"</td><td>"+(order.cliente||"Sin nombre")+"</td><td>"+(order.tipo||"Funko")+"</td><td>"+formatDate(order.created_at)+"</td><td>"+(order.price?"S/ "+order.price:"Por definir")+"</td><td>"+getActionButton(order)+"</td></tr>";
+                }).join("");
+            }).catch(function(e){ console.error("Error loading orders:", e); alert("Error: " + e); });
+        }
+        
+        function getActionButton(order) {
+            if(order.status==="pending") return "<button class=btn style='background:var(--warning);color:white;padding:5px 10px;font-size:12px' onclick=event.stopPropagation();viewOrder("+order.id+")>Editar</button>";
+            if(order.status==="sent") return "<button class=btn style='background:var(--secondary);color:white;padding:5px 10px;font-size:12px' onclick=event.stopPropagation();viewOrder("+order.id+")>Agendar</button>";
+            if(order.status==="scheduled") return "<button class=btn style='background:var(--success);color:white;padding:5px 10px;font-size:12px' onclick=event.stopPropagation();viewOrder("+order.id+")>Entregar</button>";
+            return "";
+        }
+        
+        function viewOrder(orderId) {
+            var token = localStorage.getItem("cuix_admin_token");
+            fetch("/api/admin/order/"+orderId, { headers: { "Authorization": "Bearer " + token } })
+            .then(function(r){ return r.json(); })
+            .then(function(order){
+                document.getElementById("orderModalId").textContent = orderId;
+                var modalBody = document.getElementById("orderModalBody");
+                var orderData = order.order_data || {};
+                var actions = "";
+                if(order.status === "pending"){
+                    var phoneVal = order.customer_phone || "";
+                    var country = phoneVal.indexOf("+51")>-1?"pe":phoneVal.indexOf("+1")>-1?"us":phoneVal.indexOf("+54")>-1?"ar":phoneVal.indexOf("+57")>-1?"co":phoneVal.indexOf("+56")>-1?"cl":"pe";
+                    actions = '<div class="form-group"><label>Cliente:</label><input type="text" id="customerName" value="'+(order.cliente||"")+'"></div>'+
+                        '<div class="form-group"><label>Teléfono:</label><div class="phone-wrap"><img id="flagImg" src="https://flagcdn.com/w40/'+country+'.png"><select id="countryCode" onchange="document.getElementById(\'flagImg\').src=\'https://flagcdn.com/w40/\'+this.value+\'.png\'"><option value="pe">+51</option><option value="us">+1</option><option value="ar">+54</option><option value="co">+57</option><option value="cl">+56</option></select><input type="text" id="customerPhone" value="'+phoneVal+'" style="flex:1"></div></div>'+
+                        '<div class="form-group"><label>Tipo:</label><select id="orderType"><option value="Funko Solo"'+(order.tipo==="Funko Solo"?" selected":"")+'>Funko Solo</option><option value="Funko Pareja"'+(order.tipo==="Funko Pareja"?" selected":"")+'>Funko Pareja</option><option value="Funko Mascota"'+(order.tipo==="Funko Mascota"?" selected":"")+'>Funko Mascota</option></select></div>'+
+                        '<div class="form-group"><label>Precio:</label><input type="number" id="orderPrice" value="'+(order.price||"")+'"></div>'+
+                        '<div class="form-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="savePendingOrder('+order.id+')">Guardar</button><button class="whatsapp-btn" onclick="sendWhatsAppPrice('+order.id+')">WhatsApp</button></div>';
+                }else if(order.status === "sent"){
+                    actions = '<div class="form-group"><label>Fecha:</label><input type="date" id="deliveryDate" value="'+(order.delivery_date||"")+'"></div>'+
+                        '<div class="form-group"><label>Notas:</label><textarea id="deliveryNotes">'+(order.delivery_notes||"")+'</textarea></div>'+
+                        '<div class="form-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="saveSchedule('+order.id+')">Confirmar</button></div>';
+                }else if(order.status === "scheduled"){
+                    actions = '<div class="form-group"><label>Notas:</label><textarea id="finalDeliveryNotes">'+(order.delivery_notes||"")+'</textarea></div>'+
+                        '<div class="form-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-success" onclick="confirmDelivery('+order.id+')">Entregado</button></div>';
+                }else{
+                    actions = '<div class="detail-grid"><div class="detail-item"><div class="label">Cliente</div><div class="value">'+(order.cliente||"N/A")+'</div></div><div class="detail-item"><div class="label">Teléfono</div><div class="value">'+(order.customer_phone||"N/A")+'</div></div></div><button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>';
+                }
+                modalBody.innerHTML = '<div class="detail-grid"><div class="detail-item"><div class="label">Cliente</div><div class="value">'+(order.cliente||"N/A")+'</div></div><div class="detail-item"><div class="label">Teléfono</div><div class="value">'+(order.customer_phone||"N/A")+'</div></div><div class="detail-item"><div class="label">Tipo</div><div class="value">'+(order.tipo||"Funko")+'</div></div><div class="detail-item"><div class="label">Precio</div><div class="value">'+(order.price?"S/ "+order.price:"Por definir")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">Descripción</div><div class="value">'+(order.description||"")+'</div></div><div class="detail-item"><div class="label">Ropa</div><div class="value">'+(order.clothing||"")+'</div></div><div class="detail-item"><div class="label">Zapatos</div><div class="value">'+(order.shoes||"")+'</div></div><div class="detail-item"><div class="label">Accesorios</div><div class="value">'+(order.accessories||"")+'</div></div></div>'+actions;
+                document.getElementById("orderModal").classList.add("active");
+            }).catch(function(e){ console.error(e); alert("Error al cargar"); });
+        }
+        
+        function savePendingOrder(orderId){
+            var name = document.getElementById("customerName").value;
+            var code = document.getElementById("countryCode").value;
+            var phone = document.getElementById("customerPhone").value;
+            var type = document.getElementById("orderType").value;
+            var price = document.getElementById("orderPrice").value;
+            if(!name){alert("Ingresa el nombre");return;}
+            var fullPhone = "+"+(code==="pe"?"51":code==="us"?"1":code==="ar"?"54":code==="co"?"57":code==="cl"?"56":"51")+phone;
+            updateOrder(orderId,{customer_name:name,customer_phone:fullPhone,order_type:type,price:price});
+            alert("Cambios guardados");
+            closeModal();
+            loadOrders();
+        }
+        
+        function sendWhatsAppPrice(orderId){
+            var name = document.getElementById("customerName").value;
+            var code = document.getElementById("countryCode").value;
+            var phone = document.getElementById("customerPhone").value;
+            var type = document.getElementById("orderType").value;
+            var price = document.getElementById("orderPrice").value;
+            if(!name||!price){alert("Ingresa nombre y precio");return;}
+            var fullPhone = "+"+(code==="pe"?"51":code==="us"?"1":code==="ar"?"54":code==="co"?"57":code==="cl"?"56":"51")+phone;
+            updateOrder(orderId,{customer_name:name,customer_phone:fullPhone,order_type:type,price:price,status:"sent"});
+            var mensaje = "*CUIX - COTIZACION*%0A%0AHola "+name+",%0A%0APrecio: S/ "+price+"%0A%0A";
+            if(fullPhone) window.open("https://wa.me/"+fullPhone.replace(/\D/g,"")+"?text="+mensaje,"_blank");
+            closeModal();
+            loadOrders();
+        }
+        
+        function saveSchedule(orderId){
+            var date = document.getElementById("deliveryDate").value;
+            var notes = document.getElementById("deliveryNotes").value;
+            if(!date){alert("Selecciona fecha");return;}
+            updateOrder(orderId,{delivery_date:date,delivery_notes:notes,status:"scheduled"});
+            alert("Pedido agendado");
+            closeModal();
+            loadOrders();
+        }
+        
+        function confirmDelivery(orderId){
+            var notes = document.getElementById("finalDeliveryNotes").value;
+            updateOrder(orderId,{delivery_notes:notes,status:"delivered"});
+            alert("Pedido entregado");
+            closeModal();
+            loadOrders();
+        }
+        
+        function updateOrder(orderId,data){
+            var token = localStorage.getItem("cuix_admin_token");
+            return fetch("/api/admin/order/"+orderId,{method:"PUT",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(data)}).then(function(r){return r.json();});
+        }
+        
+        function closeModal(){ document.getElementById("orderModal").classList.remove("active"); }
+        
+        function loadUsers(){
+            var tbody = document.getElementById("usersTableBody");
+            tbody.innerHTML="<tr><td colspan=6 class=empty-state>Cargando...</td></tr>";
+            var token = localStorage.getItem("cuix_admin_token");
+            fetch("/api/admin/users",{headers:{"Authorization":"Bearer "+token}})
+            .then(function(r){if(r.status===401){logout();}return r.json();})
+            .then(function(data){
+                console.log("Users loaded:", data);
+                tbody.innerHTML = data.users.map(function(u){
+                    var deleteBtn = u.username === 'admin' ? '' : '<button class="btn" style="background:#e74c3c;color:white;padding:5px 10px;font-size:12px" onclick="event.stopPropagation();deleteUser('+u.id+',\''+u.username+'\')"><i class="fas fa-trash"></i></button>';
+                    return "<tr><td>"+u.id+"</td><td>"+u.username+"</td><td>"+u.full_name+"</td><td>"+u.email+"</td><td>"+u.role+"</td><td>"+deleteBtn+"</td></tr>";
+                }).join("");
+            }).catch(function(){tbody.innerHTML="<tr><td colspan=6>Error</td></tr>";});
+        }
+        
+        function showCreateUserModal(){
+            document.getElementById("orderModal").classList.add("active");
+            document.getElementById("orderModalBody").innerHTML = '<div class="form-group"><label>Usuario:</label><input type="text" id="newUsername"></div>'+
+                '<div class="form-group"><label>Contraseña:</label><input type="password" id="newPassword"></div>'+
+                '<div class="form-group"><label>Nombre:</label><input type="text" id="newFullName"></div>'+
+                '<div class="form-group"><label>Email:</label><input type="email" id="newEmail"></div>'+
+                '<div class="form-group"><label>Rol:</label><select id="newRole"><option value="editor">Editor</option><option value="admin">Admin</option></select></div>'+
+                '<div class="form-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="createUser()">Crear</button></div>';
+        }
+        
+        function createUser(){
+            var username = document.getElementById("newUsername").value;
+            var password = document.getElementById("newPassword").value;
+            var full_name = document.getElementById("newFullName").value;
+            var email = document.getElementById("newEmail").value;
+            var role = document.getElementById("newRole").value;
+            
+            if(!username || !password){alert("Usuario y contraseña requeridos");return;}
+            
+            var token = localStorage.getItem("cuix_admin_token");
+            fetch("/api/admin/users",{
+                method:"POST",
+                headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+                body:JSON.stringify({username,password,full_name,email,role})
+            }).then(function(r){return r.json();})
+            .then(function(data){
+                if(data.success){closeModal();loadUsers();alert("Usuario creado");}
+                else{alert(data.error);}
+            }).catch(function(){alert("Error");});
+        }
+        
+        function deleteUser(id,username){
+            if(!confirm("¿Eliminar usuario "+username+"?"))return;
+            var token = localStorage.getItem("cuix_admin_token");
+            fetch("/api/admin/users/"+id,{method:"DELETE",headers:{"Authorization":"Bearer "+token}})
+            .then(function(r){return r.json();})
+            .then(function(data){
+                if(data.success){loadUsers();}
+                else{alert(data.error);}
+            }).catch(function(){alert("Error");});
+        }
+        
+        function formatDate(d){ if(!d)return"N/A"; return new Date(d).toLocaleDateString("es-PE",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+        
+        document.getElementById("orderModal").addEventListener("click",function(e){ if(e.target===this)closeModal(); });
+        checkAuth();
+        loadOrders();
+    </script>
+</body>
+</html>

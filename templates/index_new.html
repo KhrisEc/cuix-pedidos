@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funko Live Chat - Personaliza tu Figura</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.4/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .chat-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            height: calc(100vh - 40px);
+        }
+
+        .chat-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            color: white;
+            padding: 20px 20px 20px 50px;
+            /* Increased left padding to move logo right */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            max-width: 100%;
+        }
+
+        .funko-icon {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #FF6B6B;
+        }
+
+        .brand-text h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .brand-text p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #007bff;
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: #007bff;
+            color: white;
+        }
+
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .system-message {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            color: #0c5460;
+            /* Added dark color for visibility against light background */
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .order-summary {
+            background: white;
+            border-left: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .summary-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #FF6B6B;
+        }
+
+        .summary-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .summary-content {
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            cursor: pointer;
+            /* Clickable */
+        }
+
+        .summary-item:hover {
+            background: #e9ecef;
+            /* Hover effect */
+            transform: translateX(5px);
+        }
+
+        .summary-item.updated {
+            background: #e8f5e8;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .summary-item.active-step {
+            background: #fff0f0;
+            border-left: 4px solid #FF6B6B;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
+            transform: translateX(5px);
+        }
+
+        .summary-item label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            /* Increase space between label and value */
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .summary-item .value {
+            color: #333;
+            line-height: 1.4;
+            font-size: 13px;
+            /* Smaller font size as requested */
+            width: 100%;
+        }
+
+        .summary-status {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .btn-borrar {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .btn-borrar:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FF8E53);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            border-color: #FF6B6B;
+        }
+
+        .send-btn,
+        .image-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: #FF5252;
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .image-btn {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .image-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .input-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .funko-spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        .funko-head {
+            width: 30px;
+            height: 30px;
+            background: #FF6B6B;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 1s infinite;
+        }
+
+        .funko-body {
+            width: 40px;
+            height: 30px;
+            background: #FF8E53;
+            border-radius: 10px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .modal-header i {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .success-modal .modal-header i {
+            color: #4CAF50;
+        }
+
+        .warning-modal .modal-header i {
+            color: #FF9800;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #FF5252;
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .image-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                grid-template-columns: 1fr;
+                margin: 10px;
+                height: calc(100vh - 20px);
+            }
+
+            .order-summary {
+                display: none;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    
+</style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-main">
+            <!-- Header -->
+            <header class="chat-header">
+                <div class="brand">
+                    <div class="funko-icon">
+                        <img src="/static/assets/cuix-logo.svg" alt="CUIX" class="cuix-logo">
+                    </div>
+                    <div class="brand-text">
+                        <h1>Funko Live Chat</h1>
+                        <p>Diseña tu figura personalizada</p>
+                    </div>
+                </div>
+                <div class="status">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">En línea</span>
+                </div>
+            </header>
+
+            <!-- Chat Messages Area -->
+            <section class="chat-messages" id="chatMessages">
+                <div class="system-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>¡Hola! Bienvenido al sistema de diseño de figuras Funko personalizadas. Te guiaré paso a paso
+                        para crear tu figura perfecta.</span>
+                </div>
+            </section>
+
+            <!-- Input Area -->
+            <footer class="chat-input">
+                <div class="input-container">
+                    <input type="text" id="messageInput" class="message-input"
+                        placeholder="Describe los detalles de tu figura..." maxlength="500" autocomplete="off">
+                    <button id="imageButton" type="button" class="image-btn" title="Subir foto de referencia">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button id="sendButton" type="button" class="send-btn" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+                <div class="input-info">
+                    <span id="charCount">0/500</span>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Order Summary Sidebar -->
+        <aside class="order-summary" id="orderSummary">
+            <div class="summary-header">
+                <i class="fas fa-clipboard-list"></i>
+                <h2>Resumen del Pedido</h2>
+            </div>
+            <div class="summary-content">
+                <div class="summary-item" id="summaryCabeza" onclick="editSection('cabeza')">
+                    <label>🧠 CABEZA</label>
+                    <div class="value">No especificado</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('cabeza')"
+                        title="Borrar">🗑️</button>
+                </div>
+                <div class="summary-item" id="summaryParteSuperior" onclick="editSection('parte_superior')">
+                    <label>👕 PARTE SUPERIOR</label>
+                    <div class="value">No especificado</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('parte_superior')"
+                        title="Borrar">🗑️</button>
+                </div>
+                <div class="summary-item" id="summaryParteInferior" onclick="editSection('parte_inferior')">
+                    <label>👖 PARTE INFERIOR</label>
+                    <div class="value">No especificado</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('parte_inferior')"
+                        title="Borrar">🗑️</button>
+                </div>
+                <div class="summary-item" id="summaryPies" onclick="editSection('pies')">
+                    <label>👟 PIES</label>
+                    <div class="value">No especificado</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('pies')"
+                        title="Borrar">🗑️</button>
+                </div>
+                <div class="summary-item" id="summaryFotos" onclick="editSection('fotos_referencia')">
+                    <label>📸 FOTOS DE REFERENCIA</label>
+                    <div class="value">0 fotos</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('fotos_referencia')"
+                        title="Borrar">🗑️</button>
+                </div>
+                <div class="summary-item" id="summaryDetallesAdicionales" onclick="editSection('detalles_adicionales')">
+                    <label>✨ DETALLES ADICIONALES</label>
+                    <div class="value">No especificado</div>
+                    <button class="btn-borrar" onclick="event.stopPropagation(); borrarSeccion('detalles_adicionales')"
+                        title="Borrar">🗑️</button>
+                </div>
+            </div>
+            <div class="summary-status">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span class="progress-text" id="progressText">0% completo</span>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="funko-spinner">
+                <div class="funko-head">
+                    <img src="/static/assets/cuix-logo-white.svg" alt="CUIX" class="cuix-logo">
+                </div>
+                <div class="funko-body"></div>
+            </div>
+            <p>Procesando tu solicitud...</p>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal success-modal" id="successModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-check-circle"></i>
+                <h2>✅ ¡Pedido Confirmado y Enviado!</h2>
+            </div>
+            <div class="modal-body">
+                <p>🎯 Tu figura Funko personalizada ha sido confirmada y enviada exitosamente.</p>
+                <div class="contact-info">
+                    <h4>📧 Correo enviado a cuicuix.studio@gmail.com</h4>
+                    <p>Nos pondremos en contacto contigo pronto para:</p>
+                    <ul style="text-align: left; max-width: 300px; margin: 0 auto;">
+                        <li>✅ Confirmar precio final</li>
+                        <li>✅ Establecer fecha de entrega</li>
+                        <li>✅ Coordinar detalles de envío</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cerrar</button>
+                <button class="btn-primary" onclick="startNewOrder()">Nuevo Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Modal -->
+    <div class="modal warning-modal" id="warningModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h2>⚠️ Pedido Confirmado con Advertencia</h2>
+            </div>
+            <div class="modal-body">
+                <p>Tu pedido ha sido registrado, pero tuvimos un problema técnico enviando el correo.</p>
+                <div class="contact-info">
+                    <h4>🔧 ¿Qué pasó?</h4>
+                    <p>No te preocupes, hemos guardado toda tu información en nuestro sistema y nos contactaremos
+                        contigo pronto.</p>
+                    <ul style="text-align: left; max-width: 300px; margin: 0 auto;">
+                        <li>📋 Tu pedido está registrado</li>
+                        <li>📞 Te contactaremos pronto</li>
+                        <li>🎯 Tu figura será procesada</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cerrar</button>
+                <button class="btn-primary" onclick="startNewOrder()">Nuevo Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Socket.io connection
+        const socket = io('http://localhost:5001');
+
+        // Chat functionality
+        let isConnected = false;
+        let currentUserId = null;
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const imageButton = document.getElementById('imageButton');
+        const fileInput = document.getElementById('fileInput');
+        const charCount = document.getElementById('charCount');
+        const orderSummary = document.getElementById('orderSummary');
+
+        // Order data
+        let orderData = {
+            cabeza: '',
+            parte_superior: '',
+            parte_inferior: '',
+            pies: '',
+            detalles_adicionales: '',
+            fotos_referencia: []
+        };
+
+        // Current step tracking for return after edit
+        let currentStepId = null;
+        let returnToStep = null;
+
+        // Function to handle clicking on a section for editing
+        window.editSection = function (sectionKey) {
+            console.log("Editing section:", sectionKey);
+
+            // 1. Populate input with current value
+            let currentValue = '';
+
+            if (sectionKey === 'fotos_referencia') {
+                if (orderData && orderData.fotos_comentarios) {
+                    currentValue = orderData.fotos_comentarios;
+                }
+            } else if (orderData && orderData[sectionKey]) {
+                currentValue = orderData[sectionKey];
+            }
+
+            // Only set if not empty/undefined
+            if (currentValue && currentValue !== 'No especificado') {
+                messageInput.value = currentValue;
+            } else {
+                messageInput.value = ''; // Clear if empty
+            }
+
+            messageInput.focus();
+            // Update char count manually
+            const currentLength = messageInput.value.length;
+            if (charCount) charCount.textContent = `${currentLength}/500`;
+            if (sendButton) sendButton.disabled = !messageInput.value.trim();
+
+            // 2. Notify backend to switch step
+            if (isConnected && currentUserId) {
+                // Show loading indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'message system-message loading-indicator';
+                loadingDiv.style.alignSelf = 'center';
+                loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cambiando sección...';
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                socket.emit('edit_section', {
+                    user_id: currentUserId,
+                    section_key: sectionKey
+                });
+            }
+        };
+
+        window.borrarSeccion = function (sectionKey) {
+            console.log("Borrando sección:", sectionKey);
+
+            // Clear input logic if it was matching this section
+            // Wait, backend will send update.
+
+            if (isConnected && currentUserId) {
+                socket.emit('clear_section', {
+                    user_id: currentUserId,
+                    section_key: sectionKey
+                });
+            }
+        };
+
+        // Socket connection events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            isConnected = true;
+            updateConnectionStatus('online');
+            sendButton.disabled = !messageInput.value.trim();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            isConnected = false;
+            updateConnectionStatus('offline');
+        });
+
+        socket.on('connection_status', (data) => {
+            currentUserId = data.user_id;
+            updateConnectionStatus(data.status);
+
+            // Display initial prompt
+            if (data.initial_prompt) {
+                displayMessage(data.initial_prompt, 'assistant');
+            }
+
+            // Highlight current step on load
+            if (data.current_step) {
+                currentStepId = data.current_step;
+                highlightActiveStep(currentStepId);
+            }
+
+            // Update order summary
+            if (data.order_data) {
+                orderData = data.order_data;
+                updateOrderSummary(orderData);
+            }
+        });
+
+        socket.on('ai_response', (data) => {
+            showTypingIndicator();
+            if (data.error) {
+                displayMessage('❌ Lo siento, he tenido un problema. Por favor intenta nuevamente.', 'assistant');
+            } else {
+                hideTypingIndicator();
+                displayMessage(data.content, 'assistant');
+
+                // Track current step
+                if (data.current_step) {
+                    currentStepId = data.current_step;
+                    highlightActiveStep(currentStepId);
+                }
+
+                // Handle confirmation states
+                if (data.order_confirmed) {
+                    if (data.email_sent) {
+                        showSuccessModal();
+                    } else {
+                        showWarningModal();
+                    }
+                }
+            }
+            hideLoading();
+        });
+
+        socket.on('order_updated', (data) => {
+            orderData = data.order_data;
+            updateOrderSummary(orderData);
+        });
+
+        socket.on('image_processed', (data) => {
+            displayImageMessage(data.filename, data.success);
+        });
+
+        // Update connection status
+        function updateConnectionStatus(status) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.status-text');
+
+            switch (status) {
+                case 'online':
+                    statusText.textContent = 'En línea';
+                    statusIndicator.style.background = '#4CAF50';
+                    break;
+                case 'offline':
+                    statusText.textContent = 'Desconectado';
+                    statusIndicator.style.background = '#f44336';
+                    break;
+                case 'connecting':
+                    statusText.textContent = 'Conectando...';
+                    statusIndicator.style.background = '#FF9800';
+                    break;
+            }
+        }
+
+        // Send message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+
+            if (!message || !isConnected || !currentUserId) return;
+
+            displayMessage(message, 'user');
+
+            // Clear input
+            messageInput.value = '';
+            updateCharCount();
+            sendButton.disabled = true;
+            showLoading();
+
+            socket.emit('user_message', {
+                content: message,
+                user_id: currentUserId
+            });
+        }
+
+        // Display messages
+        function displayMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+
+            if (sender === 'user') {
+                avatar.innerHTML = '<i class="fas fa-user"></i>';
+            } else {
+                avatar.innerHTML = '<img src="/static/assets/cuix-logo-white.svg" alt="CUIX" class="cuix-logo">';
+            }
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content.replace(/\n/g, '<br>');
+
+            const messageTime = document.createElement('div');
+            messageTime.className = 'message-time';
+            messageTime.textContent = new Date().toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messageDiv.appendChild(messageTime);
+
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Show typing indicator
+        var typingIndicator = null;
+        function showTypingIndicator() {
+            const chatMessages = document.getElementById("chatMessages");
+            typingIndicator = document.createElement("div");
+            typingIndicator.className = "message assistant-message typing-indicator";
+            typingIndicator.innerHTML = `<div class="message-avatar"><img src="/static/assets/cuix-logo.svg" alt="CUIX" class="bot-avatar-img"></div><div class="message-content"><span class="typing-dots"><span></span><span></span><span></span></span></div>`;
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+        }
+
+        // Display image message
+        function displayImageMessage(filename, success) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = '<i class="fas fa-user"></i>';
+
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = `
+                <div class="image-preview">
+                    <i class="fas fa-image"></i> ${success ? '✅' : '❌'} ${filename}
+                </div>
+            `;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Función para borrar una sección y volver a solicitarla
+        function borrarSeccion(seccion) {
+            const seccionNames = {
+                'cabeza': 'CABEZA',
+                'parte_superior': 'PARTE SUPERIOR',
+                'parte_inferior': 'PARTE INFERIOR',
+                'pies': 'PIES',
+                'detalles_adicionales': 'DETALLES ADICIONALES',
+                'fotos': 'FOTOS DE REFERENCIA'
+            };
+
+            const nombreSeccion = seccionNames[seccion] || seccion;
+
+            if (!confirm(`¿Estás seguro de borrar "${nombreSeccion}"? El sistema te pedirá que lo ingreses de nuevo.`)) {
+                return;
+            }
+
+            // Guardar la sección actual donde está el usuario para retornar después
+            returnToStep = currentStepId;
+
+            // Enviar solicitud de borrado al servidor
+            socket.emit('borrar_seccion', {
+                user_id: currentUserId,
+                seccion: seccion
+            });
+        }
+
+        // Escuchar respuesta del servidor al borrar sección
+        socket.on('seccion_borrada', (data) => {
+            if (data.success) {
+                // Actualizar el resumen
+                if (data.order_data) {
+                    orderData = data.order_data;
+                    updateOrderSummary(orderData);
+                }
+            }
+        });
+
+        // Update order summary
+        function updateOrderSummary(data) {
+            const updates = {
+                summaryCabeza: { value: data.cabeza || 'No especificado' },
+                summaryParteSuperior: { value: data.parte_superior || 'No especificado' },
+                summaryParteInferior: { value: data.parte_inferior || 'No especificado' },
+                summaryPies: { value: data.pies || 'No especificado' },
+                summaryDetallesAdicionales: { value: data.detalles_adicionales || 'No especificado' },
+                summaryFotos: { value: `${(data.fotos_referencia && Array.isArray(data.fotos_referencia)) ? data.fotos_referencia.length : 0} fotos` }
+            };
+
+            Object.entries(updates).forEach(([elementId, config]) => {
+                const element = document.getElementById(elementId);
+                if (element && element.querySelector('.value')) {
+                    const valueElement = element.querySelector('.value');
+                    valueElement.textContent = config.value;
+                    element.classList.add('updated');
+                    setTimeout(() => {
+                        element.classList.remove('updated');
+                    }, 300);
+                }
+            });
+
+            updateProgress();
+        }
+
+        // Highlight active step
+        function highlightActiveStep(stepId) {
+            // Remove active class from all
+            document.querySelectorAll('.summary-item').forEach(item => {
+                item.classList.remove('active-step');
+            });
+
+            if (!stepId) return;
+
+            const map = {
+                'cabeza': 'summaryCabeza',
+                'parte_superior': 'summaryParteSuperior',
+                'parte_inferior': 'summaryParteInferior',
+                'pies': 'summaryPies',
+                'fotos_referencia': 'summaryFotos',
+                'detalles_adicionales': 'summaryDetallesAdicionales'
+            };
+
+            const elementId = map[stepId];
+            if (elementId) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.classList.add('active-step');
+                    element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        // Update progress
+        function updateProgress() {
+            const fields = ['cabeza', 'parte_superior', 'parte_inferior', 'pies', 'fotos_referencia', 'detalles_adicionales'];
+            let completedCount = 0;
+
+            fields.forEach(field => {
+                if (field === 'fotos_referencia') {
+                    // Check photos OR comments (if user had no photos)
+                    const hasPhotos = orderData.fotos_referencia && Array.isArray(orderData.fotos_referencia) && orderData.fotos_referencia.length > 0;
+                    const hasComments = orderData.fotos_comentarios && orderData.fotos_comentarios.trim().length > 0;
+                    if (hasPhotos || hasComments) completedCount++;
+                } else {
+                    // Generic check for text fields
+                    const hasContent = orderData[field] && orderData[field].toString().trim().length > 0;
+                    if (hasContent) completedCount++;
+                }
+            });
+
+            const progress = (completedCount / fields.length) * 100;
+
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+
+            if (progressFill) {
+                progressFill.style.width = `${progress}%`;
+            }
+
+            if (progressText) {
+                // Round to integer
+                progressText.textContent = `${Math.round(progress)}% completo`;
+            }
+        }
+
+        // Loading states
+        function showLoading() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('active');
+            }
+        }
+
+        function hideLoading() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+
+        // Update character count
+        function updateCharCount() {
+            const current = messageInput.value.length;
+            const max = messageInput.maxLength;
+            charCount.textContent = `${current}/${max}`;
+
+            if (current > max * 0.9) {
+                charCount.style.color = '#f44336';
+            } else {
+                charCount.style.color = '#666';
+            }
+        }
+
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // File upload
+        imageButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+
+                    reader.onload = (event) => {
+                        const base64Data = event.target.result;
+                        const filename = file.name;
+
+                        socket.emit('image_upload', {
+                            filename: filename,
+                            data: base64Data.split(',')[1],
+                            user_id: currentUserId
+                        });
+                    };
+
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Clear file input
+            fileInput.value = '';
+        });
+
+        // Modal functions
+        function showSuccessModal() {
+            const modal = document.getElementById('successModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function showWarningModal() {
+            const modal = document.getElementById('warningModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeModal() {
+            const modals = ['successModal', 'warningModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        }
+
+        function startNewOrder() {
+            closeModal();
+
+            // Clear chat
+            chatMessages.innerHTML = `
+                <div class="system-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>¡Hola! Bienvenido al sistema de diseño de figuras Funko personalizadas. Te guiaré paso a paso para crear tu figura perfecta.</span>
+                </div>
+            `;
+
+            // Reset order data
+            orderData = {
+                cabeza: '',
+                parte_superior: '',
+                parte_inferior: '',
+                pies: '',
+                detalles_adicionales: '',
+                fotos_referencia: []
+            };
+
+            updateOrderSummary(orderData);
+
+            // Focus input
+            messageInput.focus();
+        }
+
+        // Input event listeners
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            updateCharCount();
+            sendButton.disabled = !messageInput.value.trim();
+        });
+
+        sendButton.addEventListener('click', sendMessage);
+
+        // Focus input on load
+        messageInput.focus();
+
+        // Global functions
+        window.closeModal = closeModal;
+        window.startNewOrder = startNewOrder;
+        window.updateCharCount = updateCharCount;
+        window.scrollToBottom = scrollToBottom;
+        window.displayMessage = displayMessage;
+        window.updateOrderSummary = updateOrderSummary;
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+
+        // Update initial status
+        updateConnectionStatus('connecting');
+
+        console.log('Funko Live Chat initialized');
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="50" height="50">
+  <!-- CUIX handwritten style -->
+  <text x="50" y="65" text-anchor="middle" 
+        font-family="cursive, 'Brush Script MT', 'Segoe Script', sans-serif" 
+        font-size="32" font-weight="bold" font-style="italic"
+        fill="#FF6B6B">
+    CUIX
+  </text>
+</svg>

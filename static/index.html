@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funko Live Chat - Personaliza tu Figura</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="brand">
+                <div class="funko-icon">
+                    <img src="/static/assets/cuix-logo.svg" alt="CUIX" class="cuix-logo">
+                </div>
+                <div class="brand-text">
+                    <h1>Funko Live Chat</h1>
+                    <p>Personaliza tu figura única</p>
+                </div>
+            </div>
+            <div class="status">
+                <span class="status-indicator online"></span>
+                <span class="status-text">En línea</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="chat-main">
+            <!-- Chat Messages Area -->
+            <section class="chat-messages" id="chatMessages">
+                <div class="system-message">
+                    <i class="fas fa-info-circle"></i>
+                    <span>¡Hola! Soy tu asistente especializado en figuras Funko personalizadas. Cuéntame todos los detalles de la figura que necesitas.</span>
+                </div>
+            </section>
+
+            <!-- Order Summary -->
+            <aside class="order-summary" id="orderSummary">
+                <div class="summary-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Resumen del Pedido</h3>
+                </div>
+                <div class="summary-content">
+                    <div class="summary-item" id="summaryTipo">
+                        <label>Tipo:</label>
+                        <span class="value">No especificado</span>
+                    </div>
+                    <div class="summary-item" id="summaryVestimenta">
+                        <label>Vestimenta:</label>
+                        <span class="value">No especificado</span>
+                    </div>
+                    <div class="summary-item" id="summaryCalzado">
+                        <label>Calzado:</label>
+                        <span class="value">No especificado</span>
+                    </div>
+                    <div class="summary-item" id="summaryCabello">
+                        <label>Cabello:</label>
+                        <span class="value">No especificado</span>
+                    </div>
+                    <div class="summary-item" id="summaryAccesorios">
+                        <label>Accesorios:</label>
+                        <span class="value">No especificado</span>
+                    </div>
+                </div>
+                <div class="summary-status">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">0% completo</span>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Input Area -->
+        <footer class="chat-input">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Describe la figura que necesitas..." 
+                    maxlength="500"
+                    autocomplete="off"
+                >
+                <button id="sendButton" type="button" class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button id="imageButton" type="button" class="image-btn" title="Subir imagen">
+                    <i class="fas fa-image"></i>
+                </button>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" multiple style="display: none;">
+            <div class="input-info">
+                <span id="charCount">0/500</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="funko-spinner">
+                <div class="funko-head">
+                    <img src="/static/assets/cuix-logo.svg" alt="CUIX" class="cuix-logo">
+                </div>
+                <div class="funko-body"></div>
+            </div>
+            <p>Escribiendo...</p>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-check-circle"></i>
+                <h2>¡Pedido Completo!</h2>
+            </div>
+            <div class="modal-body">
+                <p>Tu figura personalizada está lista para procesarse.</p>
+                <div class="order-details" id="modalOrderDetails">
+                    <!-- Order details will be inserted here -->
+                </div>
+                <div class="contact-info">
+                    <p><strong>Pronto nos contactaremos para confirmar:</strong></p>
+                    <ul>
+                        <li>✅ Precio final</li>
+                        <li>✅ Fecha de entrega</li>
+                        <li>✅ Detalles de envío</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cerrar</button>
+                <button class="btn-primary" onclick="startNewOrder()">Nuevo Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/websocket.js"></script>
+    <script src="js/chat.js"></script>
+</body>
+</html>

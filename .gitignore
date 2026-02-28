@@ -1,0 +1,9 @@
+# Ignore database and logs
+*.db
+*.db-journal
+logs/
+uploads/
+orders_data/
+__pycache__/
+*.pyc
+.env
