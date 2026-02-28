@@ -616,7 +616,7 @@
             </div>
 
             <!-- Input Area -->
-            <footer class="chat-input">
+            <footer class="chat-input" id="chatInputFooter" style="display:none;">
                 <div class="input-container">
                     <input type="text" id="messageInput" class="message-input"
                         placeholder="Describe los detalles de tu figura..." maxlength="500" autocomplete="off">
@@ -1158,7 +1158,7 @@
             
             // Hide form, show chat input
             document.getElementById('customerDataForm').style.display = 'none';
-            document.querySelector('.chat-input').style.display = 'flex';
+            document.getElementById('chatInputFooter').style.display = 'flex';
             
             // Show user message in chat
             displayMessage(message, 'user');
@@ -1174,7 +1174,7 @@
         setTimeout(function() {
             if (currentStepId === 'datos_cliente' || !currentStepId) {
                 document.getElementById('customerDataForm').style.display = 'block';
-                document.querySelector('.chat-input').style.display = 'none';
+                document.getElementById('chatInputFooter').style.display = 'none';
             }
         }, 500);
 
