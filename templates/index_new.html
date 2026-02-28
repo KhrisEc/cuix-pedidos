@@ -1160,6 +1160,9 @@
             document.getElementById('customerDataForm').style.display = 'none';
             document.querySelector('.chat-input').style.display = 'flex';
             
+            // Show user message in chat
+            displayMessage(message, 'user');
+            
             // Send message to backend
             socket.emit('user_message', {
                 content: message,
