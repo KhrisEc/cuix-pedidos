@@ -213,16 +213,52 @@
         }
         
         function sendWhatsAppPrice(orderId){
+            // Buscar el pedido en la lista global
+            var order = orders.find(function(o){return o.id === orderId});
+            if(!order){alert("Error: pedido no encontrado");return;}
+            
             var name = document.getElementById("customerName").value;
             var code = document.getElementById("countryCode").value;
             var phone = document.getElementById("customerPhone").value;
             var type = document.getElementById("orderType").value;
             var price = document.getElementById("orderPrice").value;
+            
             if(!name||!price){alert("Ingresa nombre y precio");return;}
             var fullPhone = "+"+(code==="pe"?"51":code==="us"?"1":code==="ar"?"54":code==="co"?"57":code==="cl"?"56":"51")+phone;
+            
+            // Actualizar pedido
             updateOrder(orderId,{customer_name:name,customer_phone:fullPhone,order_type:type,price:price,status:"sent"});
-            var mensaje = "*CUIX - COTIZACION*%0A%0AHola "+name+",%0A%0APrecio: S/ "+price+"%0A%0A";
-            if(fullPhone) window.open("https://wa.me/"+fullPhone.replace(/\D/g,"")+"?text="+mensaje,"_blank");
+            
+            // Número del admin (para revisar cotizaciones)
+            var adminPhone = "51993232534";
+            
+            // Obtener detalles del pedido
+            var desc = order.description || "";
+            var clothing = order.clothing || "";
+            var shoes = order.shoes || "";
+            var accessories = order.accessories || "";
+            
+            // Mensaje para el admin con todos los datos del pedido
+            var mensaje = "*NUEVA COTIZACIÓN - REVISAR*%0A%0A";
+            mensaje += "*Cliente:* "+name+"%0A";
+            mensaje += "*Teléfono:* "+fullPhone+"%0A";
+            mensaje += "*Tipo:* "+type+"%0A";
+            mensaje += "*Precio:* S/ "+price+"%0A";
+            if(desc) mensaje += "*Descripción:* "+desc+"%0A";
+            if(clothing) mensaje += "*Ropa:* "+clothing+"%0A";
+            if(shoes) mensaje += "*Zapatos:* "+shoes+"%0A";
+            if(accessories) mensaje += "*Accesorios:* "+accessories+"%0A";
+            mensaje += "%0A----------------------------------------%0A%0A";
+            mensaje += "*Copia y envía al cliente:*%0A%0A";
+            mensaje += "*CUIX - COTIZACIÓN*%0A%0A";
+            mensaje += "Hola "+name+",%0A%0A";
+            mensaje += "Te compartimos la cotización de tu Funko:%0A%0A";
+            mensaje += "*Tipo:* "+type+"%0A";
+            mensaje += "*Precio:* S/ "+price+"%0A%0A";
+            mensaje += "Nos contacteremos pronto para confirmar los detalles.%0A";
+            mensaje += "%0A¡Gracias por tu preferencia! 🎁";
+            
+            window.open("https://wa.me/"+adminPhone+"?text="+mensaje,"_blank");
             closeModal();
             loadOrders();
         }
