@@ -1146,13 +1146,14 @@
             var name = document.getElementById('customerNameInput').value.trim();
             var phone = document.getElementById('customerPhoneInput').value.trim();
             var countryCode = document.getElementById('countryCodeSelect').value;
-            var countryPrefix = {'pe':'51','ar':'54','co':'57','cl':'56','us':'1'}[countryCode] || '51';
-            var fullPhone = '+' + countryPrefix + ' ' + phone;
+            
+            if (!name || !phone) {
                 alert('Por favor ingresa tu nombre y número de teléfono');
                 return;
             }
             
-            var fullPhone = '+' + countryCode + ' ' + phone;
+            var countryPrefix = {'pe':'51','ar':'54','co':'57','cl':'56','us':'1'}[countryCode] || '51';
+            var fullPhone = '+' + countryPrefix + ' ' + phone;
             var message = 'Mi nombre es ' + name + ', mi teléfono es ' + fullPhone;
             
             // Send message to backend
@@ -1161,6 +1162,14 @@
                 user_id: userId
             });
         }
+
+        // Initial visibility check (show form for new users)
+        setTimeout(function() {
+            if (currentStepId === 'datos_cliente' || !currentStepId) {
+                document.getElementById('customerDataForm').style.display = 'block';
+                document.querySelector('.chat-input').style.display = 'none';
+            }
+        }, 500);
 
         // Update progress
         function updateProgress() {
