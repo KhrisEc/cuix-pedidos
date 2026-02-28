@@ -598,13 +598,14 @@
                 </div>
                 <div class="form-group" style="margin-top:10px;">
                     <label>WhatsApp:</label>
-                    <div style="display:flex;gap:8px;">
-                        <select id="countryCodeSelect" style="padding:12px;border:2px solid #eee;border-radius:8px;">
-                            <option value="51">🇵🇪 +51</option>
-                            <option value="54">🇦🇷 +54</option>
-                            <option value="57">🇨🇴 +57</option>
-                            <option value="56">🇨🇱 +56</option>
-                            <option value="1">🇺🇸 +1</option>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <img id="flagImg" src="https://flagcdn.com/w40/pe.png" style="width:28px;height:20px;border-radius:3px;">
+                        <select id="countryCodeSelect" onchange="document.getElementById('flagImg').src='https://flagcdn.com/w40/'+this.value+'.png'" style="padding:12px;border:2px solid #eee;border-radius:8px;">
+                            <option value="pe">🇵🇪 +51 Perú</option>
+                            <option value="ar">🇦🇷 +54 Argentina</option>
+                            <option value="co">🇨🇴 +57 Colombia</option>
+                            <option value="cl">🇨🇱 +56 Chile</option>
+                            <option value="us">🇺🇸 +1 USA</option>
                         </select>
                         <input type="text" id="customerPhoneInput" placeholder="987654321" style="flex:1;padding:12px;border:2px solid #eee;border-radius:8px;">
                     </div>
@@ -1145,8 +1146,8 @@
             var name = document.getElementById('customerNameInput').value.trim();
             var phone = document.getElementById('customerPhoneInput').value.trim();
             var countryCode = document.getElementById('countryCodeSelect').value;
-            
-            if (!name || !phone) {
+            var countryPrefix = {'pe':'51','ar':'54','co':'57','cl':'56','us':'1'}[countryCode] || '51';
+            var fullPhone = '+' + countryPrefix + ' ' + phone;
                 alert('Por favor ingresa tu nombre y número de teléfono');
                 return;
             }
