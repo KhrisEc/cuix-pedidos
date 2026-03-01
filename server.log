@@ -1,0 +1,38 @@
+2026-02-28 02:43:05,259 - __main__ - INFO - MySQL connection pool created successfully
+2026-02-28 02:43:05,266 - __main__ - INFO - Database initialized successfully
+2026-02-28 02:43:05,270 - __main__ - INFO - Starting Funko Live Chat Server - NO AI VERSION
+2026-02-28 02:43:05,270 - werkzeug - WARNING - Werkzeug appears to be used in a production deployment. Consider switching to a production web server instead.
+============================================================
+🎯 FUNKO LIVE CHAT - VERSIÓN SIN IA - INICIANDO 🎯
+============================================================
+📍 Servidor corriendo en: http://localhost:5001
+🤖 IA: DESACTIVADA (Sistema de respuestas predefinidas)
+🌐 Abre tu navegador y visita esa URL
+============================================================
+ * Serving Flask app 'app'
+ * Debug mode: on
+2026-02-28 02:43:05,277 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://172.25.90.15:5001
+2026-02-28 02:43:05,278 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2026-02-28 02:43:05,278 - werkzeug - INFO -  * Restarting with stat
+2026-02-28 02:43:05,564 - __main__ - INFO - MySQL connection pool created successfully
+2026-02-28 02:43:05,572 - __main__ - INFO - Database initialized successfully
+2026-02-28 02:43:05,576 - __main__ - INFO - Starting Funko Live Chat Server - NO AI VERSION
+2026-02-28 02:43:05,576 - werkzeug - WARNING - Werkzeug appears to be used in a production deployment. Consider switching to a production web server instead.
+2026-02-28 02:43:05,580 - werkzeug - WARNING -  * Debugger is active!
+2026-02-28 02:43:05,582 - werkzeug - INFO -  * Debugger PIN: 137-663-827
+2026-02-28 02:43:06,354 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:06] "GET /socket.io/?EIO=4&transport=polling&t=PoZCtX0 HTTP/1.1" 200 -
+2026-02-28 02:43:06,675 - __main__ - INFO - Client connected: 74fed4c2-bc37-4271-9ed5-1089b09869b4
+2026-02-28 02:43:06,676 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:06] "POST /socket.io/?EIO=4&transport=polling&t=PoZCtbw&sid=Io1SOjZkKerT9_wfAAAA HTTP/1.1" 200 -
+2026-02-28 02:43:06,698 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:06] "GET /socket.io/?EIO=4&transport=polling&t=PoZCtbw.0&sid=Io1SOjZkKerT9_wfAAAA HTTP/1.1" 200 -
+2026-02-28 02:43:06,702 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:06] "GET /socket.io/?EIO=4&transport=polling&t=PoZCtgp&sid=Io1SOjZkKerT9_wfAAAA HTTP/1.1" 200 -
+2026-02-28 02:43:04,139 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:04] "GET /socket.io/?EIO=4&transport=polling&t=PoZCthE HTTP/1.1" 200 -
+2026-02-28 02:43:04,456 - __main__ - INFO - Client connected: 0b6ed260-1d3c-4c76-b2bb-a63affbeccdf
+2026-02-28 02:43:04,456 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:04] "POST /socket.io/?EIO=4&transport=polling&t=PoZCtmA&sid=dvvxdsHFYjXBovmpAAAC HTTP/1.1" 200 -
+2026-02-28 02:43:04,479 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:04] "GET /socket.io/?EIO=4&transport=polling&t=PoZCtmB&sid=dvvxdsHFYjXBovmpAAAC HTTP/1.1" 200 -
+2026-02-28 02:43:07,927 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:07] "GET /socket.io/?EIO=4&transport=polling&t=PoZCubw HTTP/1.1" 200 -
+2026-02-28 02:43:08,267 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:08] "GET /socket.io/?EIO=4&transport=polling&t=PoZCub-.0&sid=CpaG-GivMH-Q1T9hAAAE HTTP/1.1" 200 -
+2026-02-28 02:43:08,294 - __main__ - INFO - Client connected: 2c5e965d-079a-4f1e-9279-58f3a34ca16f
+2026-02-28 02:43:08,294 - werkzeug - INFO - 127.0.0.1 - - [28/Feb/2026 02:43:08] "POST /socket.io/?EIO=4&transport=polling&t=PoZCub-&sid=CpaG-GivMH-Q1T9hAAAE HTTP/1.1" 200 -

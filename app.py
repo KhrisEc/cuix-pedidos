@@ -585,6 +585,50 @@ class EmailManager:
         self.from_email = "forms@peru-code.com"
         self.from_name = "Funko Live Chat"
         self.to_email = "cuicuix.studio@gmail.com"
+        self.settings = self.load_settings()
+
+    def load_settings(self):
+        """Load settings from config file"""
+        try:
+            config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading settings: {e}")
+        return {'email_enabled': True, 'email_destinatarios': 'cuicuix.studio@gmail.com'}
+
+    def is_email_enabled(self):
+        """Check if email sending is enabled"""
+        self.settings = self.load_settings()  # Reload each time
+        return self.settings.get('email_enabled', True)
+
+    def get_destinatarios(self):
+        """Get destination emails from settings"""
+        self.settings = self.load_settings()  # Reload each time
+        destinatarios = self.settings.get('email_destinatarios', 'cuicuix.studio@gmail.com')
+        if isinstance(destinatarios, str):
+            return [e.strip() for e in destinatarios.split(',') if e.strip()]
+        return destinatarios
+
+    def extract_customer_info(self, datos_cliente):
+        """Extraer nombre y teléfono del campo datos_cliente"""
+        import re
+        nombre = 'Cliente Web'
+        telefono = ''
+        
+        if datos_cliente:
+            # Extraer nombre: "Mi nombre es Juan Pérez"
+            nombre_match = re.search(r'Mi nombre es (.+?)(?:,|$)', datos_cliente, re.IGNORECASE)
+            if nombre_match:
+                nombre = nombre_match.group(1).strip()
+            
+            # Extraer teléfono: "mi teléfono es +51 987654321"
+            telefono_match = re.search(r'tel[eé]fono es (.+?)$', datos_cliente, re.IGNORECASE)
+            if telefono_match:
+                telefono = telefono_match.group(1).strip()
+        
+        return nombre, telefono
 
     def save_order_to_db(self, order_data, user_id):
         """Guardar pedido en MySQL (tabla orders)"""
@@ -595,6 +639,10 @@ class EmailManager:
                 return self.save_order_to_sqlite(order_data, user_id)
 
             cursor = conn.cursor()
+
+            # Extraer nombre y teléfono del cliente
+            datos_cliente = order_data.get('datos_cliente', '')
+            customer_name, customer_phone = self.extract_customer_info(datos_cliente)
 
             # Generar descripción combinada del pedido
             description = f"Cabeza: {order_data.get('cabeza', '')}\n"
@@ -612,8 +660,8 @@ class EmailManager:
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
             ''', (
                 user_id,
-                'Cliente Web',
-                '',
+                customer_name,
+                customer_phone,
                 'Funko Personalizado',
                 order_json,
                 0,
@@ -638,24 +686,38 @@ class EmailManager:
             conn = sqlite3.connect('conversations.db')
             cursor = conn.cursor()
 
+            # Agregar columna order_data si no existe
+            cursor.execute("PRAGMA table_info(orders)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'order_data' not in columns:
+                cursor.execute("ALTER TABLE orders ADD COLUMN order_data TEXT")
+
+            # Extraer nombre y teléfono del cliente
+            datos_cliente = order_data.get('datos_cliente', '')
+            customer_name, customer_phone = self.extract_customer_info(datos_cliente)
+
             description = f"Cabeza: {order_data.get('cabeza', '')}\n"
             description += f"Parte Superior: {order_data.get('parte_superior', '')}\n"
             description += f"Parte Inferior: {order_data.get('parte_inferior', '')}\n"
             description += f"Pies: {order_data.get('pies', '')}\n"
             description += f"Detalles: {order_data.get('detalles_adicionales', '')}"
 
+            # Guardar como JSON completo
+            order_json = json.dumps(order_data, ensure_ascii=False)
+
             cursor.execute('''
-                INSERT INTO orders (user_id, cliente, customer_phone, tipo, description, clothing, shoes, accessories, price, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO orders (user_id, cliente, customer_phone, tipo, description, clothing, shoes, accessories, order_data, price, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 user_id,
-                'Cliente Web',
-                '',
+                customer_name,
+                customer_phone,
                 'Funko Personalizado',
                 description,
                 order_data.get('parte_superior', ''),
                 order_data.get('pies', ''),
                 order_data.get('detalles_adicionales', ''),
+                order_json,
                 0,
                 'pending',
                 datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -675,9 +737,20 @@ class EmailManager:
     def send_order_email(self, order_data, user_id):
         """Enviar correo electrónico con el resumen del pedido"""
         try:
+            # Check if email sending is enabled
+            if not self.is_email_enabled():
+                logger.info("Email sending is disabled in settings")
+                return False
+            
+            # Get destination emails from settings
+            destinatarios = self.get_destinatarios()
+            if not destinatarios:
+                logger.warning("No destination emails configured")
+                return False
+            
             msg = MIMEMultipart()
             msg['From'] = formataddr((self.from_name, self.from_email))
-            msg['To'] = self.to_email
+            msg['To'] = ', '.join(destinatarios)
             msg['Subject'] = f"🎯 Nuevo Pedido Funko Personalizado - {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
             html_content = self.generate_order_html(order_data, user_id)
@@ -713,9 +786,9 @@ class EmailManager:
             # Usar SMTP_SSL para puerto 465 (SSL directo)
             with smtplib.SMTP_SSL(self.smtp_server, self.smtp_port) as server:
                 server.login(self.smtp_username, self.smtp_password)
-                server.sendmail(self.from_email, [self.to_email, self.from_email], msg.as_string())
+                server.sendmail(self.from_email, destinatarios, msg.as_string())
 
-            logger.info(f"Email enviado exitosamente para pedido")
+            logger.info(f"Email enviado exitosamente a {destinatarios}")
             return True
 
         except smtplib.SMTPAuthenticationError as e:
@@ -888,11 +961,12 @@ def admin_html():
 @app.route('/api/admin/orders')
 @require_auth
 def admin_get_orders():
-    """Get all orders for admin from MySQL"""
+    """Get all orders for admin from MySQL or SQLite"""
     try:
         conn = get_mysql_connection()
         if not conn:
-            return jsonify({'error': 'Database not available'}), 500
+            # Fallback a SQLite
+            return get_orders_sqlite()
         
         cursor = conn.cursor(dictionary=True)
         cursor.execute('''
@@ -932,6 +1006,7 @@ def admin_get_orders():
                 'clothing': order_data.get('parte_superior', ''),
                 'shoes': order_data.get('pies', ''),
                 'accessories': order_data.get('detalles_adicionales', ''),
+                'order_data': order_data,
                 'price': float(row['price']) if row['price'] else 0,
                 'status': row['status'] or 'pending',
                 'customer_phone': row.get('customer_phone', ''),
@@ -944,16 +1019,80 @@ def admin_get_orders():
         
     except Exception as e:
         logger.error(f"Error fetching orders: {e}")
+        # Fallback a SQLite
+        try:
+            return get_orders_sqlite()
+        except Exception as e2:
+            return jsonify({'error': str(e)}), 500
+
+def get_orders_sqlite():
+    """Get orders from SQLite"""
+    try:
+        conn = sqlite3.connect('conversations.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, user_id, cliente, customer_phone, tipo, description, clothing, shoes, accessories, order_data, price, status, delivery_date, delivery_notes, created_at, updated_at
+            FROM orders
+            ORDER BY created_at DESC
+            LIMIT 50
+        ''')
+        
+        orders = []
+        for row in cursor.fetchall():
+            # Obtener order_data
+            order_data_str = row['order_data']
+            order_data = {}
+            if order_data_str:
+                try:
+                    order_data = json.loads(order_data_str)
+                except:
+                    pass
+            
+            # Usar datos del registro o del JSON
+            cliente = row['cliente'] or order_data.get('nombre', 'Cliente Web')
+            tipo = row['tipo'] or 'Funko Personalizado'
+            
+            # Extraer campos del JSON para descripción
+            description = f"Cabeza: {order_data.get('cabeza', '')}\n"
+            description += f"Parte Superior: {order_data.get('parte_superior', '')}\n"
+            description += f"Parte Inferior: {order_data.get('parte_inferior', '')}\n"
+            description += f"Pies: {order_data.get('pies', '')}\n"
+            description += f"Detalles: {order_data.get('detalles_adicionales', '')}"
+            
+            orders.append({
+                'id': row['id'],
+                'user_id': row['user_id'],
+                'cliente': cliente,
+                'tipo': tipo,
+                'description': description,
+                'clothing': order_data.get('parte_superior', ''),
+                'shoes': order_data.get('pies', ''),
+                'accessories': order_data.get('detalles_adicionales', ''),
+                'order_data': order_data,
+                'price': row['price'] or 0,
+                'status': row['status'] or 'pending',
+                'customer_phone': row['customer_phone'] or '',
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            })
+        
+        conn.close()
+        return jsonify({'orders': orders})
+    except Exception as e:
+        logger.error(f"Error fetching orders from SQLite: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/order/<int:order_id>')
 @require_auth
 def admin_get_order_detail(order_id):
-    """Get detailed order info from MySQL"""
+    """Get detailed order info from MySQL or SQLite"""
     try:
         conn = get_mysql_connection()
         if not conn:
-            return jsonify({'error': 'Database not available'}), 500
+            # Fallback a SQLite
+            return get_order_detail_sqlite(order_id)
 
         cursor = conn.cursor(dictionary=True)
         cursor.execute('''
@@ -992,6 +1131,58 @@ def admin_get_order_detail(order_id):
         })
     except Exception as e:
         logger.error(f"Error fetching order: {e}")
+        # Fallback a SQLite
+        try:
+            return get_order_detail_sqlite(order_id)
+        except Exception as e2:
+            return jsonify({'error': str(e)}), 500
+
+def get_order_detail_sqlite(order_id):
+    """Get order detail from SQLite"""
+    try:
+        conn = sqlite3.connect('conversations.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, user_id, cliente, customer_phone, tipo, description, clothing, shoes, accessories, order_data, price, status, delivery_date, delivery_notes, created_at, updated_at
+            FROM orders WHERE id = ?
+        ''', (order_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'error': 'Order not found'}), 404
+        
+        # Obtener order_data
+        order_data_str = row['order_data']
+        order_data = {}
+        if order_data_str:
+            try:
+                order_data = json.loads(order_data_str)
+            except:
+                pass
+        
+        return jsonify({
+            'id': row['id'],
+            'user_id': row['user_id'],
+            'customer_name': row['cliente'],
+            'customer_phone': row['customer_phone'],
+            'order_type': row['tipo'],
+            'cliente': row['cliente'] or 'Sin nombre',
+            'tipo': row['tipo'] or 'Funko',
+            'order_data': order_data,
+            'price': row['price'] or 0,
+            'status': row['status'],
+            'created_at': row['created_at'],
+            'updated_at': row['updated_at'],
+            'is_complete': row['status'] == 'completed',
+            'delivery_date': row['delivery_date'],
+            'delivery_notes': row['delivery_notes']
+        })
+    except Exception as e:
+        logger.error(f"Error fetching order detail from SQLite: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/order/<int:order_id>', methods=['PUT'])
@@ -1000,13 +1191,32 @@ def admin_update_order(order_id):
     """Update order"""
     try:
         data = request.json
+        logger.info(f"=== Actualizando pedido {order_id} con datos: {data} ===")
+        
+        # Intentar MySQL primero
         conn = get_mysql_connection()
-        if not conn:
-            return jsonify({'error': 'Database not available'}), 500
+        logger.info(f"Conexión MySQL: {conn}")
+        
+        if conn:
+            logger.info("Usando MySQL para actualizar")
+            return update_order_mysql(order_id, data)
+        else:
+            # Fallback a SQLite
+            logger.info("MySQL no disponible, usando SQLite")
+            return update_order_sqlite(order_id, data)
 
+    except Exception as e:
+        logger.error(f"Error en admin_update_order: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+def update_order_mysql(order_id, data):
+    """Update order in MySQL"""
+    try:
+        conn = get_mysql_connection()
         cursor = conn.cursor()
 
-        # Build update query
         updates = []
         values = []
 
@@ -1019,9 +1229,31 @@ def admin_update_order(order_id):
         if 'order_type' in data:
             updates.append("order_type = %s")
             values.append(data['order_type'])
-        if 'price' in data:
+        if 'price' in data and data['price'] is not None:
             updates.append("price = %s")
-            values.append(data['price'])
+            values.append(float(data['price']) if data['price'] else None)
+        if 'status' in data:
+            updates.append("status = %s")
+            values.append(data['status'])
+        if 'delivery_date' in data:
+            updates.append("delivery_date = %s")
+            values.append(data['delivery_date'])
+        if 'delivery_notes' in data:
+            updates.append("delivery_notes = %s")
+            values.append(data['delivery_notes'])
+
+        if updates:
+            values.append(order_id)
+            query = f"UPDATE orders SET {', '.join(updates)} WHERE id = %s"
+            cursor.execute(query, values)
+            conn.commit()
+            logger.info(f"Pedido {order_id} actualizado en MySQL")
+
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error updating order in MySQL: {e}")
+        return jsonify({'error': str(e)}), 500
         if 'status' in data:
             updates.append("status = %s")
             values.append(data['status'])
@@ -1042,6 +1274,59 @@ def admin_update_order(order_id):
         return jsonify({'success': True})
     except Exception as e:
         logger.error(f"Error updating order: {e}")
+        # Fallback a SQLite
+        try:
+            return update_order_sqlite(order_id, data)
+        except Exception as e2:
+            return jsonify({'error': str(e)}), 500
+
+def update_order_sqlite(order_id, data):
+    """Update order in SQLite"""
+    try:
+        logger.info(f"update_order_sqlite: orden_id={order_id}, data={data}")
+        conn = sqlite3.connect('conversations.db')
+        cursor = conn.cursor()
+
+        # Build update query
+        updates = []
+        values = []
+
+        if 'customer_name' in data:
+            updates.append("cliente = ?")
+            values.append(data['customer_name'])
+        if 'customer_phone' in data:
+            updates.append("customer_phone = ?")
+            values.append(data['customer_phone'])
+        if 'order_type' in data:
+            updates.append("tipo = ?")
+            values.append(data['order_type'])
+        if 'price' in data:
+            updates.append("price = ?")
+            values.append(data['price'])
+        if 'status' in data:
+            updates.append("status = ?")
+            values.append(data['status'])
+        if 'delivery_date' in data:
+            updates.append("delivery_date = ?")
+            values.append(data['delivery_date'])
+        if 'delivery_notes' in data:
+            updates.append("delivery_notes = ?")
+            values.append(data['delivery_notes'])
+
+        logger.info(f"update_order_sqlite: updates={updates}, values={values}")
+        
+        if updates:
+            values.append(order_id)
+            query = f"UPDATE orders SET {', '.join(updates)} WHERE id = ?"
+            logger.info(f"update_order_sqlite: query={query}")
+            cursor.execute(query, values)
+            conn.commit()
+            logger.info(f"update_order_sqlite: afectados={cursor.rowcount}")
+
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error updating order in SQLite: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/admin/whatsapp-link')
@@ -1167,13 +1452,17 @@ def admin_login():
     data = request.json
     username = data.get('username', '')
     password = data.get('password', '')
+    
+    logger.info(f"Intento de login: username={username}, password={password}")
 
     users = load_users_mysql()
+    logger.info(f"Usuarios cargados: {list(users.keys())}")
 
     for user in users.values():
         if user['username'] == username:
             # Aceptar contraseña hasheada o en texto plano (para fallback SQLite)
             hashed = hashlib.sha256(password.encode()).hexdigest()
+            logger.info(f"Usuario encontrado: {user['username']}, hash guardado: {user['password_hash']}, hash calculado: {hashed}")
             if user['password_hash'] == hashed or user['password_hash'] == password:
                 token = generate_token(user['id'], username)
                 return jsonify({
@@ -1287,6 +1576,37 @@ def admin_delete_user(user_id):
         logger.error(f"Error deleting user: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/admin/settings', methods=['GET'])
+@require_auth
+def get_settings():
+    """Get application settings"""
+    try:
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                settings = json.load(f)
+        else:
+            settings = {'email_enabled': True, 'email_destinatarios': 'cuicuix.studio@gmail.com'}
+        return jsonify(settings)
+    except Exception as e:
+        logger.error(f"Error loading settings: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/settings', methods=['POST'])
+@require_auth
+def save_settings():
+    """Save application settings"""
+    try:
+        data = request.get_json()
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json')
+        with open(config_path, 'w') as f:
+            json.dump(data, f, indent=4)
+        logger.info(f"Settings saved: {data}")
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error saving settings: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/health')
 def health_check():
     """Health check endpoint"""
@@ -1365,9 +1685,12 @@ def handle_user_message(data):
         current_step = session['current_step']
         order_confirmed = False
         email_sent = False
+        
+        logger.info(f"User {user_id[:8]} - Current step: {current_step['id'] if current_step else 'None'}")
 
         if current_step:
             extracted_info = order_manager.extract_step_info(message_content, current_step['id'])
+            logger.info(f"Extracted: {extracted_info}")
 
             # Merge extracted information (OVERWRITE mode)
             session['order_data'] = order_manager.merge_order_data(
@@ -1434,11 +1757,9 @@ def handle_user_message(data):
                         ai_response = f"✅ ¡Guardado! Pasemos a lo siguiente.\n\n{next_incomplete_step['prompt']}"
                 else:
                     ai_response = "✅ ¡Todo listo! Revisemos el pedido."
-
-        else:
-            # Should not happen typically
-            ai_response = response_manager.get_response('acknowledgment')
-
+        
+        print(f"DEBUG: Sending ai_response: {ai_response[:80]}...")
+        
         # Save assistant response
         conversation_manager.save_message(
             user_id,

@@ -1166,7 +1166,7 @@
             // Send message to backend
             socket.emit('user_message', {
                 content: message,
-                user_id: userId
+                user_id: currentUserId
             });
         }
 
