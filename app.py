@@ -964,6 +964,7 @@ def admin_get_orders():
     """Get all orders for admin from MySQL or SQLite"""
     try:
         conn = get_mysql_connection()
+        logger.info("Conexion MySQL: " + str(conn))
         if not conn:
             # Fallback a SQLite
             return get_orders_sqlite()
@@ -976,8 +977,11 @@ def admin_get_orders():
             LIMIT 50
         ''')
         
+        rows = cursor.fetchall()
+        logger.info("Filas encontradas en MySQL: " + str(len(rows)))
+        
         orders = []
-        for row in cursor.fetchall():
+        for row in rows:
             # Extraer datos del JSON
             order_data = row.get('order_data', {})
             if isinstance(order_data, str):
@@ -1015,10 +1019,13 @@ def admin_get_orders():
             })
         
         conn.close()
+        logger.info("Pedidos a devolver: " + str(len(orders)))
         return jsonify({'orders': orders})
         
     except Exception as e:
         logger.error(f"Error fetching orders: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback a SQLite
         try:
             return get_orders_sqlite()

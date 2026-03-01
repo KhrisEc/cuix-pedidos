@@ -66,6 +66,15 @@
         #photoModal { justify-content: center; align-items: center; }
         #photoModal > div { background: white; padding: 10px; border-radius: 8px; }
         
+        /* Estilos para modal de pedido agrupado */
+        .detail-section { margin-bottom: 20px; }
+        .detail-section-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: #666; font-size: 13px; }
+        .detail-value { font-weight: 500; color: var(--dark); text-align: right; }
+        .detail-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
         
         
         .phone-wrap{display:flex;gap:8px;align-items:center}.phone-wrap img{width:24px;height:16px;border-radius:2px}.phone-wrap select{width:70px!important;padding:8px!important}#usersSection { display: none; }
@@ -252,7 +261,7 @@
                     actions = '<div class="detail-grid"><div class="detail-item"><div class="label">Cliente</div><div class="value">'+(order.cliente||"N/A")+'</div></div><div class="detail-item"><div class="label">Teléfono</div><div class="value">'+(order.customer_phone||"N/A")+'</div></div></div><button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>';
                 }
                 
-                // Generar miniaturas de fotos
+                // Generar miniaturas de fotos con opcion de descargar
                 var fotosHtml = '';
                 if(orderData.fotos_referencia && orderData.fotos_referencia.length > 0){
                     fotosHtml = '<div class="photo-thumbnails">';
@@ -261,12 +270,48 @@
                         if(imgData && imgData.indexOf('data:') === -1){
                             imgData = 'data:image/jpeg;base64,' + imgData;
                         }
+                        fotosHtml += '<div style="position:relative;display:inline-block;">';
                         fotosHtml += '<img src="' + imgData + '" class="photo-thumb" onclick="viewPhoto(\'' + imgData + '\')" title="Foto ' + (index+1) + '">';
+                        fotosHtml += '<a href="' + imgData + '" download="funko_foto_' + (index+1) + '.jpg" style="position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,0.7);color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-decoration:none;">Descargar</a>';
+                        fotosHtml += '</div>';
                     });
                     fotosHtml += '</div>';
                 }
                 
-                modalBody.innerHTML = '<div class="detail-grid"><div class="detail-item"><div class="label">Cliente</div><div class="value">'+(order.cliente||"N/A")+'</div></div><div class="detail-item"><div class="label">Teléfono</div><div class="value">'+(order.customer_phone||"N/A")+'</div></div><div class="detail-item"><div class="label">Tipo</div><div class="value">'+(order.tipo||"Funko")+'</div></div><div class="detail-item"><div class="label">Precio</div><div class="value">'+(order.price?"S/ "+order.price:"Por definir")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">🧠 Cabeza</div><div class="value">'+(orderData.cabeza||"No especificado")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">👕 Parte Superior</div><div class="value">'+(orderData.parte_superior||"No especificado")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">👖 Parte Inferior</div><div class="value">'+(orderData.parte_inferior||"No especificado")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">👟 Pies</div><div class="value">'+(orderData.pies||"No especificado")+'</div></div><div class="detail-item" style="grid-column:1/-1"><div class="label">📸 Fotos de Referencia</div>'+(fotosHtml || '<div class="value">No especificadas</div>')+'</div><div class="detail-item" style="grid-column:1/-1"><div class="label">✨ Detalles Adicionales</div><div class="value">'+(orderData.detalles_adicionales||"No especificado")+'</div></div></div>'+actions;
+                // Construir HTML organizado por secciones
+                var modalContent = '';
+                
+                // Sección: Datos del Cliente
+                modalContent += '<div class="detail-section">';
+                modalContent += '<div class="detail-section-title">DATOS DEL CLIENTE</div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Cliente</span><span class="detail-value">' + (order.cliente || 'N/A') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Telefono</span><span class="detail-value">' + (order.customer_phone || 'N/A') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Tipo de Funko</span><span class="detail-value">' + (order.tipo || 'Funko Personalizado') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Precio</span><span class="detail-value">' + (order.price ? 'S/ ' + order.price : 'Por definir') + '</span></div>';
+                modalContent += '</div>';
+                
+                // Sección: Detalles del Funko
+                modalContent += '<div class="detail-section">';
+                modalContent += '<div class="detail-section-title">DETALLES DEL FUNKO</div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Cabeza</span><span class="detail-value">' + (orderData.cabeza || 'No especificado') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Parte Superior</span><span class="detail-value">' + (orderData.parte_superior || 'No especificado') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Parte Inferior</span><span class="detail-value">' + (orderData.parte_inferior || 'No especificado') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Pies</span><span class="detail-value">' + (orderData.pies || 'No especificado') + '</span></div>';
+                modalContent += '<div class="detail-row"><span class="detail-label">Detalles Adicionales</span><span class="detail-value">' + (orderData.detalles_adicionales || 'No especificado') + '</span></div>';
+                modalContent += '</div>';
+                
+                // Sección: Fotos de Referencia
+                var fotoCount = orderData.fotos_referencia ? orderData.fotos_referencia.length : 0;
+                modalContent += '<div class="detail-section">';
+                modalContent += '<div class="detail-section-title">FOTOS DE REFERENCIA (' + fotoCount + ')</div>';
+                if(fotoCount > 0){
+                    modalContent += fotosHtml;
+                } else {
+                    modalContent += '<span class="detail-label">No especificadas</span>';
+                }
+                modalContent += '</div>';
+                
+                modalBody.innerHTML = modalContent + actions;
                 document.getElementById("orderModal").classList.add("active");
             }).catch(function(e){ console.error(e); alert("Error al cargar"); });
         }
