@@ -451,7 +451,8 @@
                 console.log("Users loaded:", data);
                 tbody.innerHTML = data.users.map(function(u){
                     var deleteBtn = u.username === 'admin' ? '' : '<button class="btn" style="background:#e74c3c;color:white;padding:5px 10px;font-size:12px" onclick="event.stopPropagation();deleteUser('+u.id+',\''+u.username+'\')"><i class="fas fa-trash"></i></button>';
-                    return "<tr><td>"+u.id+"</td><td>"+u.username+"</td><td>"+u.full_name+"</td><td>"+u.email+"</td><td>"+u.role+"</td><td>"+deleteBtn+"</td></tr>";
+                    var editBtn = '<button class="btn" style="background:#3498db;color:white;padding:5px 10px;font-size:12px;margin-right:5px;" onclick="event.stopPropagation();editUser('+u.id+',\''+u.username+'\',\''+u.full_name+'\',\''+u.email+'\',\''+u.role+'\')"><i class="fas fa-edit"></i></button>';
+                    return "<tr><td>"+u.id+"</td><td>"+u.username+"</td><td>"+u.full_name+"</td><td>"+u.email+"</td><td>"+u.role+"</td><td>"+editBtn+deleteBtn+"</td></tr>";
                 }).join("");
             }).catch(function(){tbody.innerHTML="<tr><td colspan=6>Error</td></tr>";});
         }
@@ -562,10 +563,43 @@
         function deleteUser(id,username){
             if(!confirm("¿Eliminar usuario "+username+"?"))return;
             var token = localStorage.getItem("cuix_admin_token");
-            fetch("/api/admin/users/"+id,{method:"DELETE",headers:{"Authorization":"Bearer "+token}})
+            fetch("/api/admin/user/"+id,{method:"DELETE",headers:{"Authorization":"Bearer "+token}})
             .then(function(r){return r.json();})
             .then(function(data){
                 if(data.success){loadUsers();}
+                else{alert(data.error);}
+            }).catch(function(){alert("Error");});
+        }
+
+        function editUser(id, username, full_name, email, role){
+            document.getElementById("orderModal").classList.add("active");
+            document.getElementById("orderModalBody").innerHTML = '<div class="form-group"><label>Usuario:</label><input type="text" id="editUsername" value="'+username+'" disabled style="background:#eee;"></div>'+
+                '<div class="form-group"><label>Nueva Contraseña:</label><input type="password" id="editPassword" placeholder="Dejar vacío para mantener actual"></div>'+
+                '<div class="form-group"><label>Nombre:</label><input type="text" id="editFullName" value="'+full_name+'"></div>'+
+                '<div class="form-group"><label>Email:</label><input type="email" id="editEmail" value="'+email+'"></div>'+
+                '<div class="form-group"><label>Rol:</label><select id="editRole"><option value="admin" '+(role==='admin'?'selected':'')+'>Admin</option><option value="editor" '+(role==='editor'?'selected':'')+'>Editor</option><option value="viewer" '+(role==='viewer'?'selected':'')+'>Viewer</option></select></div>'+
+                '<div class="form-buttons"><button class="btn btn-secondary" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="updateUser('+id+')">Guardar</button></div>';
+        }
+
+        function updateUser(id){
+            var full_name = document.getElementById("editFullName").value;
+            var email = document.getElementById("editEmail").value;
+            var role = document.getElementById("editRole").value;
+            var password = document.getElementById("editPassword").value;
+
+            if(!full_name || !email){alert("Nombre y email requeridos");return;}
+
+            var token = localStorage.getItem("cuix_admin_token");
+            var data = {full_name:full_name,email:email,role:role};
+            if(password){data.password = password;}
+
+            fetch("/api/admin/user/"+id,{
+                method:"PUT",
+                headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+                body:JSON.stringify(data)
+            }).then(function(r){return r.json();})
+            .then(function(data){
+                if(data.success){closeModal();loadUsers();alert("Usuario actualizado");}
                 else{alert(data.error);}
             }).catch(function(){alert("Error");});
         }

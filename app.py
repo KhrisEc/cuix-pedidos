@@ -1419,11 +1419,19 @@ def update_user_mysql(user_id, user_data):
         return False
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE admin_users
-            SET full_name = %s, email = %s, role = %s
-            WHERE id = %s
-        """, (user_data['full_name'], user_data['email'], user_data['role'], user_id))
+        # Si se proporciona contraseña, actualizarla también
+        if 'password_hash' in user_data:
+            cursor.execute("""
+                UPDATE admin_users
+                SET full_name = %s, email = %s, role = %s, password_hash = %s
+                WHERE id = %s
+            """, (user_data['full_name'], user_data['email'], user_data['role'], user_data['password_hash'], user_id))
+        else:
+            cursor.execute("""
+                UPDATE admin_users
+                SET full_name = %s, email = %s, role = %s
+                WHERE id = %s
+            """, (user_data['full_name'], user_data['email'], user_data['role'], user_id))
         conn.commit()
         return cursor.rowcount > 0
     except Exception as e:
@@ -1554,6 +1562,10 @@ def admin_update_user(user_id):
             'email': data.get('email', ''),
             'role': data.get('role', 'viewer')
         }
+
+        # Si se proporciona una nueva contraseña, incluirla
+        if data.get('password'):
+            user_data['password_hash'] = hashlib.sha256(data['password'].encode()).hexdigest()
 
         if update_user_mysql(user_id, user_data):
             return jsonify({'success': True})
